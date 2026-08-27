@@ -1,0 +1,10 @@
+.venv
+venv
+.git
+__pycache__
+*.pyc
+.env
+data/snapshot.json
+data/dashboard.html
+dashboard.html
+tests
