@@ -3,7 +3,7 @@
 清晨从行情电讯机打出的记录单：用美股夜盘、韩日指标与宏观纸带，推演 A 股科技开盘倾向（高开 / 平开 / 低开）。
 
 暖白纸面、油墨黑、一枚红章。不是暗色仪表盘。
-<img width="2560" height="1440" alt="ScreenShot_2026-08-27_213803_889" src="https://github.com/user-attachments/assets/88659c6c-a0f2-451d-b8d2-d2b07bee9fca" />
+<img width="1709" height="1291" alt="QQ20260827-213941" src="https://github.com/user-attachments/assets/31f6a2e3-3ece-4f5e-b8f1-160d5e14903d" />
 
 
 ## 本地运行
