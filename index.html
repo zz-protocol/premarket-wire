@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>盘前电讯</title>
+  <style>
+    html,body{margin:0;background:#FBF9F4;color:#111;font:16px/1.5 ui-sans-serif,system-ui,sans-serif}
+    .boot{min-height:100vh;display:grid;place-items:center;letter-spacing:.16em;opacity:.7}
+  </style>
+</head>
+<body>
+  <div class="boot">纸带接入中</div>
+  <script>
+    const PROJECT = "https://wwlyxkgoncbxqhfgkggx.supabase.co";
+    const KEY = "sb_publishable_hkcfTRLfAXDvgWKVQ8zC6Q_JAlZInVB";
+    fetch(PROJECT + "/rest/v1/tape_snapshot?id=eq.1&select=html", {
+      headers: { apikey: KEY, Authorization: "Bearer " + KEY }
+    })
+      .then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
+      .then((rows) => {
+        const html = rows && rows[0] && rows[0].html;
+        if (!html) throw new Error("empty");
+        document.open();
+        document.write(html);
+        document.close();
+      })
+      .catch(() => {
+        const f = document.createElement("iframe");
+        f.src = PROJECT + "/functions/v1/premarket";
+        f.title = "盘前电讯";
+        f.setAttribute("style", "border:0;position:fixed;inset:0;width:100%;height:100%");
+        document.body.replaceChildren(f);
+      });
+  </script>
+</body>
+</html>
