@@ -10,7 +10,7 @@ export const YAHOO_CHART =
 
 export const TIMEOUT_SINA_MS = 15_000;
 export const TIMEOUT_YAHOO_MS = 15_000;
-export const LLM_TIMEOUT_MS = 60_000;
+export const LLM_TIMEOUT_MS = 90_000;
 
 export const DEFAULT_ENDPOINT = "https://api.edgefn.net/v1/chat/completions";
 export const DEFAULT_MODEL = "DeepSeek-V4-Flash-0731";
