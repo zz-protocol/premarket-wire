@@ -115,6 +115,18 @@ function normalize(pred: Record<string, unknown> | null): Pred {
   return out;
 }
 
+function redactSecrets(s: string): string {
+  return s
+    .replace(/\brc-[A-Za-z0-9_-]+/g, "rc-[REDACTED]")
+    .replace(/\bsk-[A-Za-z0-9_-]+/g, "sk-[REDACTED]")
+    .replace(/Bearer\s+[A-Za-z0-9._\-]+/gi, "Bearer [REDACTED]")
+    .replace(/[A-Za-z0-9_\-]{32,}/g, (m) => {
+      if (/^[A-Fa-f0-9]+$/.test(m) && m.length >= 32) return "[REDACTED]";
+      if (m.startsWith("rc-") || m.startsWith("sk-")) return "[REDACTED]";
+      return m;
+    });
+}
+
 async function callLlm(context: string): Promise<string> {
   const endpoint = (Deno.env.get("LLM_ENDPOINT") || DEFAULT_ENDPOINT).trim();
   const key = (Deno.env.get("LLM_API_KEY") || "").trim();
@@ -136,9 +148,18 @@ async function callLlm(context: string): Promise<string> {
     body: JSON.stringify(payload),
     signal: AbortSignal.timeout(LLM_TIMEOUT_MS),
   });
-  if (!res.ok) throw new Error(`LLM HTTP ${res.status}`);
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    const snippet = redactSecrets(body).slice(0, 300);
+    throw new Error(`LLM HTTP ${res.status} ${snippet}`.trim());
+  }
   const data = await res.json();
-  return data.choices[0].message.content as string;
+  const content = data?.choices?.[0]?.message?.content;
+  if (content == null || content === "") {
+    const snippet = redactSecrets(JSON.stringify(data)).slice(0, 300);
+    throw new Error(`LLM missing content ${snippet}`);
+  }
+  return content as string;
 }
 
 export async function predict(): Promise<{
@@ -155,11 +176,30 @@ export async function predict(): Promise<{
   if (!key) {
     return { ...fetched, pred: failedPred(NO_KEY_SUMMARY) };
   }
-  try {
-    const raw = await callLlm(context);
-    const pred = normalize(parsePrediction(raw));
-    return { ...fetched, pred };
-  } catch {
+  let raw: string | null = null;
+  let lastErr: unknown = null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      raw = await callLlm(context);
+      lastErr = null;
+      break;
+    } catch (err) {
+      lastErr = err;
+      console.error("LLM call failed", String(err));
+      if (attempt === 0) {
+        await new Promise((r) => setTimeout(r, 2000));
+      }
+    }
+  }
+  if (lastErr != null || raw == null) {
+    const msg = redactSecrets(String(lastErr ?? "unknown")).slice(0, 80);
+    return { ...fetched, pred: failedPred("模型调用失败：" + msg) };
+  }
+  const parsed = parsePrediction(raw);
+  if (!parsed) {
+    console.error("LLM unparseable content", redactSecrets(raw).slice(0, 300));
     return { ...fetched, pred: failedPred() };
   }
+  const pred = normalize(parsed);
+  return { ...fetched, pred };
 }
